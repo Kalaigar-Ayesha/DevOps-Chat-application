@@ -18,4 +18,25 @@ output "secrets_manager_arn" {
   description = "AWS Secrets Manager secret ARN for External Secrets Operator."
 }
 
+output "eks_cluster_name" {
+  value       = module.eks.cluster_name
+  description = "AWS EKS Managed Cluster Name."
+}
+
+output "eks_cluster_endpoint" {
+  value       = module.eks.cluster_endpoint
+  description = "AWS EKS Control Plane Endpoint."
+}
+
+output "eks_oidc_provider_arn" {
+  value       = module.eks.oidc_provider_arn
+  description = "OIDC Provider ARN for IAM Roles for Service Accounts (IRSA)."
+}
+
+output "kubectl_config_command" {
+  value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
+  description = "Command to configure local kubectl to connect to the AWS EKS cluster."
+}
+
+
 

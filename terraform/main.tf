@@ -75,4 +75,20 @@ module "secrets_manager" {
   cloudinary_url = var.cloudinary_url
 }
 
+module "eks" {
+  source = "./modules/eks"
+
+  name_prefix             = var.name_prefix
+  cluster_name            = "${var.name_prefix}-eks-cluster"
+  vpc_id                  = module.vpc.vpc_id
+  public_subnet_ids       = module.vpc.public_subnet_ids
+  private_subnet_ids      = module.vpc.app_subnet_ids
+  node_instance_type      = var.eks_node_instance_type
+  desired_node_count      = var.eks_desired_node_count
+  min_node_count          = var.eks_min_node_count
+  max_node_count          = var.eks_max_node_count
+  docdb_security_group_id = module.docdb.security_group_id
+}
+
+
 

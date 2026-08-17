@@ -105,3 +105,28 @@ variable "docdb_instance_class" {
   default     = "db.t3.medium"
 }
 
+variable "eks_node_instance_type" {
+  description = "Worker node instance type for AWS EKS"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "eks_desired_node_count" {
+  description = "Desired number of worker nodes in EKS Managed Node Group"
+  type        = number
+  default     = 2
+}
+
+variable "eks_min_node_count" {
+  description = "Minimum number of worker nodes in EKS Managed Node Group"
+  type        = number
+  default     = 1
+}
+
+variable "eks_max_node_count" {
+  description = "Maximum number of worker nodes in EKS Managed Node Group"
+  type        = number
+  default     = 4
+}
+
+
