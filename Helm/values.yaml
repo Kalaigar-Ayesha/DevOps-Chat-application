@@ -48,3 +48,9 @@ secrets:
 
 ingress:
   host: chatapp-prod.local
+
+externalSecrets:
+  enabled: false
+  awsRegion: us-east-1
+  serviceAccountName: external-secrets-sa
+  remoteSecretKey: /production/chatapp/backend

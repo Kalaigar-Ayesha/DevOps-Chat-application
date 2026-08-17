@@ -67,3 +67,12 @@ module "web" {
   app_alb_dns_name = module.app.alb_dns_name
 }
 
+module "secrets_manager" {
+  source = "./modules/secrets_manager"
+
+  name_prefix    = var.name_prefix
+  jwt_secret     = var.jwt_secret
+  cloudinary_url = var.cloudinary_url
+}
+
+

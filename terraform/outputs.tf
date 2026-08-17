@@ -13,3 +13,9 @@ output "docdb_endpoint" {
   description = "DocumentDB cluster endpoint."
 }
 
+output "secrets_manager_arn" {
+  value       = module.secrets_manager.secret_arn
+  description = "AWS Secrets Manager secret ARN for External Secrets Operator."
+}
+
+
