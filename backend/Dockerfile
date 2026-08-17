@@ -1,22 +1,25 @@
 # backend/Dockerfile
-# Use Node's official image for a small runtime environment
 FROM node:18-alpine
 
-# Create app directory
+# Set non-root working directory and permissions
 WORKDIR /app
 
-# Install dependencies based on the package manifest first so we can leverage layer caching
-COPY package*.json ./
-RUN npm ci --only=production
-# Bundle app source
-COPY . .
+# Copy package manifests and set ownership
+COPY --chown=node:node package*.json ./
 
-# Define environment defaults; these can be overridden by compose or runtime variables
+# Install production dependencies as non-root node user
+RUN npm ci --only=production
+
+# Copy application source with node user ownership
+COPY --chown=node:node . .
+
+# Environment defaults
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Expose port the app listens on
+# Switch to unprivileged non-root user
+USER node
+
 EXPOSE 5000
 
-# Start the application
 CMD ["node", "src/index.js"]

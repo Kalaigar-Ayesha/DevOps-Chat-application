@@ -12,20 +12,28 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
       containers:
         - name: frontend
           image: kayesha01/chat-app-frontend:latest
           imagePullPolicy: Always
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
-            - containerPort: 80
-
+            - containerPort: 8080
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
-
           resources:
             requests:
               cpu: 50m
@@ -33,3 +41,17 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+            - name: cache-dir
+              mountPath: /var/cache/nginx
+            - name: run-dir
+              mountPath: /var/run
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}
+        - name: cache-dir
+          emptyDir: {}
+        - name: run-dir
+          emptyDir: {}

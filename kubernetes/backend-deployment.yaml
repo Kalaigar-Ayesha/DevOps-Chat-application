@@ -4,21 +4,26 @@ metadata:
   name: backend
 spec:
   replicas: 2
-
   selector:
     matchLabels:
       app: backend
-
   template:
     metadata:
       labels:
         app: backend
-
     spec:
-
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       initContainers:
         - name: wait-for-mongo
           image: busybox:1.36
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           command:
             - sh
             - -c
@@ -29,57 +34,51 @@ spec:
                 sleep 3
               done
               echo "MongoDB ready!"
-
       containers:
         - name: backend
-          image: kayesha01/chat-app-backend:v7
-          imagePullPolicy: Never
-
+          image: kayesha01/chat-app-backend:latest
+          imagePullPolicy: Always
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5000
-
           env:
             - name: PORT
               value: "5000"
-
             - name: MONGODB_URI
               valueFrom:
                 secretKeyRef:
                   name: backend-secret
                   key: MONGODB_URI
-
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: backend-secret
                   key: JWT_SECRET
-
             - name: CLIENT_URL
               valueFrom:
                 secretKeyRef:
                   name: backend-secret
                   key: CLIENT_URL
-
             - name: REDIS_HOST
               value: "redis"
-
             - name: REDIS_PORT
               value: "6379"
-
           livenessProbe:
             httpGet:
               path: /health
               port: 5000
             initialDelaySeconds: 40
             periodSeconds: 20
-
           readinessProbe:
             httpGet:
               path: /health
               port: 5000
             initialDelaySeconds: 20
             periodSeconds: 10
-
           resources:
             requests:
               cpu: 100m
@@ -87,3 +86,9 @@ spec:
             limits:
               cpu: 300m
               memory: 256Mi
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}

@@ -102,6 +102,15 @@ module "waf" {
   name_prefix = var.name_prefix
 }
 
+module "remote_backend" {
+  source = "./modules/remote_backend"
+
+  name_prefix = var.name_prefix
+  bucket_name = "${var.name_prefix}-tfstate-bucket-us-east-1"
+  table_name  = "${var.name_prefix}-tfstate-locks"
+}
+
+
 
 
 

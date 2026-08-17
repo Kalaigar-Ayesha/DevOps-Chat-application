@@ -48,6 +48,17 @@ output "waf_web_acl_arn" {
   description = "AWS WAF v2 Web ACL ARN protecting Application Load Balancers."
 }
 
+output "tfstate_s3_bucket" {
+  value       = module.remote_backend.bucket_id
+  description = "S3 Bucket Name storing Terraform remote state."
+}
+
+output "tfstate_dynamodb_table" {
+  value       = module.remote_backend.dynamodb_table_name
+  description = "DynamoDB Table Name providing distributed state locking."
+}
+
+
 
 
 
