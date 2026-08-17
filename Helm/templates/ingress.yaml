@@ -3,14 +3,20 @@ kind: Ingress
 metadata:
   name: {{ include "chatapp.fullname" . }}-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    {{- if .Values.certManager.enabled }}
+    cert-manager.io/cluster-issuer: {{ include "chatapp.fullname" . }}-letsencrypt
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- end }}
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
+  {{- if .Values.ingress.tls }}
   tls:
     - hosts:
         - {{ .Values.ingress.host }}
-      secretName: chatapp-tls
-
+      secretName: {{ .Values.ingress.tlsSecretName | default "chatapp-tls-cert" }}
+  {{- end }}
   rules:
     - host: {{ .Values.ingress.host }}
       http:
@@ -22,3 +28,17 @@ spec:
                 name: {{ include "chatapp.fullname" . }}-frontend
                 port:
                   number: {{ .Values.service.frontendPort }}
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "chatapp.fullname" . }}-backend
+                port:
+                  number: {{ .Values.service.backendPort }}
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "chatapp.fullname" . }}-backend
+                port:
+                  number: {{ .Values.service.backendPort }}

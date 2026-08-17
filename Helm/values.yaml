@@ -50,6 +50,12 @@ secrets:
 
 ingress:
   host: chatapp-prod.local
+  tls: true
+  tlsSecretName: chatapp-tls-cert
+
+certManager:
+  enabled: true
+  email: admin@chatapp-prod.local
 
 externalSecrets:
   enabled: false

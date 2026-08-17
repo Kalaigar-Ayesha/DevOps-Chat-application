@@ -1,0 +1,16 @@
+{{- if .Values.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ include "chatapp.fullname" . }}-letsencrypt
+spec:
+  acme:
+    server: {{ .Values.certManager.server | default "https://acme-v02.api.letsencrypt.org/directory" }}
+    email: {{ .Values.certManager.email }}
+    privateKeySecretRef:
+      name: {{ include "chatapp.fullname" . }}-letsencrypt-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+{{- end }}

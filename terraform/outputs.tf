@@ -38,5 +38,11 @@ output "kubectl_config_command" {
   description = "Command to configure local kubectl to connect to the AWS EKS cluster."
 }
 
+output "acm_certificate_arn" {
+  value       = module.acm.certificate_arn
+  description = "AWS ACM Certificate ARN for HTTPS ALB listener."
+}
+
+
 
 

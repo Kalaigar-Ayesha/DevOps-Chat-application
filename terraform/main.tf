@@ -90,5 +90,12 @@ module "eks" {
   docdb_security_group_id = module.docdb.security_group_id
 }
 
+module "acm" {
+  source = "./modules/acm"
+
+  name_prefix = var.name_prefix
+}
+
+
 
 
