@@ -2,6 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
@@ -12,8 +14,45 @@ dotenv.config();
 
 const app = express();
 
+// Security Headers via Helmet.js
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        connectSrc: ["'self'", "ws:", "wss:"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
+
+// Rate Limiting (DDoS & Brute Force Mitigation)
+const isTestEnv = process.env.NODE_ENV === "test";
+
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => isTestEnv,
+  message: { error: "Too many requests from this IP, please try again after 15 minutes." },
+});
+
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 login/signup attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => isTestEnv,
+  message: { error: "Too many authentication attempts, please try again later." },
+});
 
 // Middleware to track request metrics
 app.use((req, res, next) => {
@@ -29,15 +68,23 @@ app.use((req, res, next) => {
   next();
 });
 
-const corsOrigin =
-  process.env.NODE_ENV === "production"
-    ? true // reflect request Origin (works with nginx reverse proxy / same-origin)
-    : (process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) ??
-      "http://localhost:5173");
+// Strict CORS Whitelist Configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) || []),
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || isTestEnv) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS security policy"));
+      }
+    },
     credentials: true,
   })
 );
@@ -62,8 +109,9 @@ app.get("/metrics", async (req, res) => {
   }
 });
 
-app.use("/api/auth", authRoutes);
+// Apply rate limiters to routes
+app.use("/api/", globalApiLimiter);
+app.use("/api/auth", authRateLimiter, authRoutes);
 app.use("/api/messages", messageRoutes);
 
 export { app };
-

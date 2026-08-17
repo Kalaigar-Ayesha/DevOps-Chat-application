@@ -43,6 +43,12 @@ output "acm_certificate_arn" {
   description = "AWS ACM Certificate ARN for HTTPS ALB listener."
 }
 
+output "waf_web_acl_arn" {
+  value       = module.waf.web_acl_arn
+  description = "AWS WAF v2 Web ACL ARN protecting Application Load Balancers."
+}
+
+
 
 
 

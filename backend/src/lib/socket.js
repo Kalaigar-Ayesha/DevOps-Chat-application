@@ -23,16 +23,17 @@ export async function initializeSocket(expressApp) {
   app = expressApp;
   server = http.createServer(app);
 
-  const socketOrigins =
-    process.env.NODE_ENV === "production"
-      ? "*"
-      : (process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) ?? [
-          "http://localhost:5173",
-        ]);
+  const socketOrigins = [
+    process.env.CLIENT_URL,
+    ...(process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) || []),
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ].filter(Boolean);
 
   io = new Server(server, {
     cors: {
       origin: socketOrigins,
+      credentials: true,
     },
   });
 

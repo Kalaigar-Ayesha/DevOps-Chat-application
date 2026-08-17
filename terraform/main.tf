@@ -96,6 +96,13 @@ module "acm" {
   name_prefix = var.name_prefix
 }
 
+module "waf" {
+  source = "./modules/waf"
+
+  name_prefix = var.name_prefix
+}
+
+
 
 
 
