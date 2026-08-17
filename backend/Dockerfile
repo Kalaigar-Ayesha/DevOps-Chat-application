@@ -1,5 +1,5 @@
 # backend/Dockerfile
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set non-root working directory and permissions
 WORKDIR /app
