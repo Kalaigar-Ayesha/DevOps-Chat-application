@@ -1,0 +1,61 @@
+{{- if eq .Values.mongo.haMode "replicaset" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chatapp.fullname" . }}-mongo-hs
+  labels:
+    app: mongo
+spec:
+  ports:
+    - port: {{ .Values.service.mongoPort }}
+      name: mongo
+  clusterIP: None
+  selector:
+    app: mongo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "chatapp.fullname" . }}-mongo
+spec:
+  serviceName: {{ include "chatapp.fullname" . }}-mongo-hs
+  replicas: {{ .Values.mongo.replicas | default 3 }}
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mongo
+          image: "{{ .Values.mongo.image }}:{{ .Values.mongo.tag }}"
+          command:
+            - mongod
+            - "--replSet"
+            - "rs0"
+            - "--bind_ip_all"
+          ports:
+            - containerPort: {{ .Values.service.mongoPort }}
+              name: mongo
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.mongo.storage }}
+{{- end }}

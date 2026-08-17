@@ -29,6 +29,8 @@ mongo:
   image: mongo
   tag: "7"
   storage: 5Gi
+  haMode: "replicaset"
+  replicas: 3
 
 autoscaling:
   enabled: true

@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-hs
+  labels:
+    app: mongo
+spec:
+  ports:
+    - port: 27017
+      name: mongo
+  clusterIP: None
+  selector:
+    app: mongo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+spec:
+  serviceName: mongo-hs
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mongo
+          image: mongo:7
+          command:
+            - mongod
+            - "--replSet"
+            - "rs0"
+            - "--bind_ip_all"
+          ports:
+            - containerPort: 27017
+              name: mongo
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+        - name: mongo-sidecar
+          image: mongo:7
+          command:
+            - sh
+            - -c
+            - |
+              until mongosh --host mongo-0.mongo-hs --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+                echo "Waiting for mongo-0..."
+                sleep 2
+              done
+              
+              mongosh --host mongo-0.mongo-hs --eval "
+                try {
+                  rs.status();
+                } catch(e) {
+                  rs.initiate({
+                    _id: 'rs0',
+                    members: [
+                      { _id: 0, host: 'mongo-0.mongo-hs:27017' },
+                      { _id: 1, host: 'mongo-1.mongo-hs:27017' },
+                      { _id: 2, host: 'mongo-2.mongo-hs:27017' }
+                    ]
+                  });
+                }
+              "
+              echo "ReplicaSet rs0 configured!"
+              sleep infinity
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 5Gi

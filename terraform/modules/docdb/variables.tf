@@ -29,3 +29,10 @@ variable "instance_class" {
   description = "DocumentDB instance class"
 }
 
+variable "instance_count" {
+  type        = number
+  description = "Number of DocumentDB cluster instances across AZs"
+  default     = 3
+}
+
+

@@ -39,13 +39,17 @@ resource "aws_docdb_cluster" "this" {
   db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.this.name
   engine                          = "docdb"
   storage_encrypted               = true
+  backup_retention_period         = 7
+  preferred_backup_window         = "02:00-04:00"
+  preferred_maintenance_window    = "sun:04:30-sun:05:00"
   skip_final_snapshot             = true
 }
 
 resource "aws_docdb_cluster_instance" "instances" {
-  count              = 2
+  count              = var.instance_count
   identifier         = "${var.name_prefix}-docdb-${count.index + 1}"
   cluster_identifier = aws_docdb_cluster.this.id
   instance_class     = var.instance_class
 }
+
 
