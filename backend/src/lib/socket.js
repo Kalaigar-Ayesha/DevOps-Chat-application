@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import http from "http";
+import { initRedis, addOnlineUser, removeOnlineUser, getOnlineUsers } from "./redis.js";
 
 // Global variables for socket management
 let app, server;
@@ -7,7 +9,7 @@ let userSocketMap = {};
 let io;
 
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  return userId ? userId.toString() : null;
 }
 
 export function getIO() {
@@ -17,7 +19,7 @@ export function getIO() {
 // Export io directly for backward compatibility
 export { io };
 
-export function initializeSocket(expressApp) {
+export async function initializeSocket(expressApp) {
   app = expressApp;
   server = http.createServer(app);
 
@@ -34,21 +36,46 @@ export function initializeSocket(expressApp) {
     },
   });
 
-  io.on("connection", (socket) => {
+  // Attach Redis adapter if Redis is available
+  const { isRedisAvailable, pubClient, subClient } = await initRedis();
+  if (isRedisAvailable && pubClient && subClient) {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("🚀 Socket.io Redis Adapter configured for horizontal scaling.");
+  }
+
+  async function broadcastOnlineUsers() {
+    const redisOnlineUsers = await getOnlineUsers();
+    if (redisOnlineUsers) {
+      io.emit("getOnlineUsers", redisOnlineUsers);
+    } else {
+      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    }
+  }
+
+  io.on("connection", async (socket) => {
     console.log("A user connected", socket.id);
 
     const userId = socket.handshake.query.userId;
-    if (userId) userSocketMap[userId] = socket.id;
+    if (userId) {
+      const userStr = userId.toString();
+      userSocketMap[userStr] = socket.id;
+      socket.join(userStr); // Join room named by userId for cross-pod messaging
+      await addOnlineUser(userStr, socket.id);
+    }
 
-    // io.emit() is used to send events to all the connected clients
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    await broadcastOnlineUsers();
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("A user disconnected", socket.id);
-      delete userSocketMap[userId];
-      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+      if (userId) {
+        const userStr = userId.toString();
+        delete userSocketMap[userStr];
+        await removeOnlineUser(userStr, socket.id);
+      }
+      await broadcastOnlineUsers();
     });
   });
 
   return { io, server };
 }
+

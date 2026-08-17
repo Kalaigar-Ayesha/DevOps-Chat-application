@@ -12,9 +12,13 @@ if (process.env.NODE_ENV !== "test" && !process.env.JWT_SECRET) {
 
 const PORT = process.env.PORT || 5000;
 
-const { server } = initializeSocket(app);
+const startServer = async () => {
+  const { server } = await initializeSocket(app);
 
-server.listen(PORT, () => {
-  console.log("server is running on PORT:" + PORT);
-  connectDB();
-});
+  server.listen(PORT, () => {
+    console.log("server is running on PORT:" + PORT);
+    connectDB();
+  });
+};
+
+startServer();
